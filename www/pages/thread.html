@@ -1,0 +1,140 @@
+<template>
+	<div class="page">
+		<!-- Top Navbar -->
+		<div class="navbar">
+			<div class="navbar-bg"></div>
+			<div class="navbar-inner">
+				<div class="left">
+					<a href="#" class="link back">
+						<i class="icon icon-back"></i>
+						<span class="if-not-md">戻る</span>
+					</a>
+				</div>
+				<div class="title sliding">kintone 掲示板スレッド</div>
+			</div>
+		</div>
+		<!-- Scrollable page content-->
+		<div class="page-content">
+			<div class="list media-list">
+				<ul>
+					<li>
+						<div class="item-content">
+							<div class="item-inner">
+								<div class="item-title-row">
+									<div class="item-title">${record.title.value}</div>
+									<div class="item-after">${record.pubDate.value}</div>
+								</div>
+								<div class="item-subtitle">${record.level.value}</div>
+								<div class="item-text">${showText(record.body.value)}</div>
+							</div>
+						</div>
+					</li>
+					<li>
+						${attachments.map(a => $h`
+						<div class="item-content">
+							<div class="item-inner">
+								<img src="${a}" width="100%" />
+							</div>
+						</div>
+						`)}
+					</li>
+				</ul>
+			</div>
+			<div class="block-title">コメント</div>
+			<div class="list media-list">
+				<ul>
+					${comments.map(c => $h`
+					<li>
+						<div class="item-content">
+							<div class="item-inner">
+								<div class="item-title-row">
+									<div class="item-title">${c.creator.name}</div>
+									<div class="item-after">${dayjs(c.createdAt).format('MM月DD日 HH:mm')}</div>
+								</div>
+								<div class="item-text">${c.text}</div>
+							</div>
+						</div>
+					</li>
+					`)}
+				</ul>
+			</div>
+			<div class="list inset">
+				<ul>
+					<li class="item-content item-input">
+						<div class="item-inner">
+							<div class="item-input-wrap">
+								<textarea id="text" class="resizable"></textarea><br />
+								<button class="button" @click=${addComment}>コメントする</button>
+							</div>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script>
+	export default (props, { $f7, $f7router, $update, $onMounted }) => {
+		const { record } = props; // 前の画面から送られてくるスレッドデータ
+		let comments = []; // コメント一覧用
+		let attachments = []; // 添付ファイル用
+
+		// 画面をマウントした際に実行されるイベント
+		$onMounted(() => {
+			initView(); // 初期表示用
+			getAttachments(); // 添付ファイルの取得
+		});
+
+		// 添付ファイルの取得
+		const getAttachments = async () => {
+			if (record.attachment.value.length === 0) return;
+			try {
+				// 添付ファイルのダウンロード
+				const promises = record.attachment.value.map(a => downloadFile(a.fileKey));
+				const response = await Promise.all(promises);
+				attachments = response.map(res => URL.createObjectURL(res.data));
+				$update();
+			} catch (e) {
+				console.log(e);
+			}
+		}
+
+		// 初期表示用関数
+		const initView = async () => {
+			// コメントの取得
+			const res = await getComments({
+				app: KINTONE_APP_ID,
+				record: record.$id.value,
+			});
+			// コメントを変数に入れる
+			comments = res.data.comments;
+			// 画面更新
+			$update();
+		};
+
+		// コメントを登録するイベント
+		const addComment = async () => {
+			// 入力値の取得
+			const text = $('#text').val();
+			// コメント投稿
+			await postComment({
+				app: KINTONE_APP_ID,
+				record: record.$id.value,
+				comment: {
+					text,
+				}
+			});
+			// 画面を表示し直し
+			initView();
+		};
+
+		// HTMLを取り除く関数
+		const showText = (html) => {
+			const tmp = document.implementation.createHTMLDocument("New").body;
+			tmp.innerHTML = html;
+			return (tmp.textContent || tmp.innerText || "").split('').slice(0, 100).join('');
+		};
+		return $render;
+	}
+</script>

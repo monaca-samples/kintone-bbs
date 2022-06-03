@@ -1,0 +1,76 @@
+<template>
+  <div class="page" data-name="home">
+    <!-- Top Navbar -->
+    <div class="navbar">
+      <div class="navbar-bg"></div>
+      <div class="navbar-inner">
+        <div class="title sliding">kintoneログイン</div>
+      </div>
+    </div>
+
+    <!-- Scrollable page content-->
+    <div class="page-content">
+      <form id="login">
+        <div class="list no-hairlines-md">
+          <ul>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-input-wrap">
+                  <input type="text" id="username" value="" placeholder="ログイン名" />
+                  <span class="input-clear-button"></span>
+                </div>
+              </div>
+            </li>
+            <li class="item-content item-input">
+              <div class="item-inner">
+                <div class="item-input-wrap">
+                  <input type="password" id="password" value="" placeholder="パスワード" />
+                  <span class="input-clear-button"></span>
+                </div>
+              </div>
+            </li>
+          </ul>
+      </form>
+    </div>
+    <div class="list">
+      <ul>
+        <li>
+          <a href="#" @click=${login} class="item-link list-button">ログインする</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  </div>
+</template>
+
+<script>
+  export default (props, { $f7, $f7router }) => {
+    // ログインボタンを押した時の処理
+    const login = async () => {
+      // 入力値を受け取る
+      const username = $f7.$el.find('#username').val();
+      const password = $f7.$el.find('#password').val();
+      // APIリクエスト用のヘッダー文字列作成
+      AUTH = `${username}:${password}`;
+      try {
+        // APIリクエスト
+        const res = await getApp({ id: KINTONE_APP_ID });
+        // レスポンスで認証情報の正しさを判定
+        const text = res.data.appId === KINTONE_APP_ID ? 'ログインしました' : res.message;
+        // トースト表示
+        $f7.toast.create({
+          text,
+          position: 'top',
+          closeTimeout: 500,
+        }).open();
+        // 一覧画面に遷移
+        $f7router.navigate({
+          name: 'Threads',
+        });
+      } catch (e) {
+        console.log(e.message);
+      }
+    };
+    return $render;
+  }
+</script>

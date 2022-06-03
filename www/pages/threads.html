@@ -1,0 +1,69 @@
+<template>
+  <div class="page" data-name="home">
+    <!-- Top Navbar -->
+    <div class="navbar">
+      <div class="navbar-bg"></div>
+      <div class="navbar-inner">
+        <div class="title sliding">kintone 掲示板スレッド</div>
+        <div class="right">
+          <a href="/form" class="link">
+            <i class="f7-icons">plus</i>
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- Scrollable page content-->
+    <div class="page-content">
+      <div class="data-table timecards">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>配信日</th>
+              <th>タイトル</th>
+              <th>重要度</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${records.map(r => $h`
+            <tr @click=${()=> click(r)}>
+              <td>${r.$id.value}</td>
+              <td>${r.pubDate.value}</td>
+              <td>${r.title.value}</td>
+              <td>${r.level.value}</td>
+            </tr>
+            `)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+  export default (props, { $f7, $f7router, $on, $update }) => {
+    let records = []; // スレッド一覧用
+    // 画面が表示されたら呼び出されるイベント
+    $on('pageAfterIn', async (e, page) => {
+      // スレッド一覧の取得
+      const res = await getRecords({
+        app: KINTONE_APP_ID,
+      });
+      // 結果を変数に入れる
+      records = res.data.records;
+      // 画面を更新
+      $update();
+    });
+
+    // スレッド一覧をタップした際のイベント
+    const click = (record) => {
+      // スレッド詳細画面に遷移
+      $f7router.navigate(`/threads/${record.$id.value}`, {
+        props: {
+          record,
+        },
+      });
+    }
+    return $render;
+  }
+</script>
